@@ -7,7 +7,7 @@ _usage() {
   echo
   echo "-o [output]     output file"
   echo "-t [template]   template file"
-  echo "-v [varsfile]   vars file"
+  echo "-s [varsfile]   vars file"
   echo "-p [password]   decryption password"
   echo "-k [passfile]   decryption password file"
   echo "-v              verbose"
@@ -45,7 +45,7 @@ while [ ! -z $1 ]; do
   case $1 in
     -o)        shift; outfile=$1;;
     -t)        shift; template=$1;;
-    -v)        shift; varsfile=$1;;
+    -s)        shift; varsfile=$1;;
     -p)        shift; password=$1;;
     -k)        shift; password_file=$1;;
     -v)        verbose=1;;
