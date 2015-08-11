@@ -1,0 +1,87 @@
+#!/bin/bash
+
+verbose=0
+
+_usage() {
+  echo "usage: $0 [args]"
+  echo
+  echo "-o [output]     output file"
+  echo "-t [template]   template file"
+  echo "-v [varsfile]   vars file"
+  echo "-p [password]   decryption password"
+  echo "-k [passfile]   decryption password file"
+  echo "-v              verbose"
+  echo "-h              help"
+  echo
+}
+
+_verbose() {
+  [ $verbose -eq 1 ] && echo ${1}
+}
+
+_error() {
+  echo "ERROR: ${1}"
+  exit 1
+}
+
+_convert_template() {
+  eval "echo \"$(cat $template)\"" > $outfile
+  if [ $? -eq 0 ]; then
+    _verbose "Template written to ${outfile}"
+  else
+    _error "Could not convert template ${template}"
+  fi
+}
+
+_clean() {
+  if [[ ${varsfile: -6} == ".unenc" ]]; then
+    rm ${varsfile}
+  fi
+}
+
+[ -z $1 ] && { _usage; exit 1; }
+
+while [ ! -z $1 ]; do
+  case $1 in
+    -o)        shift; outfile=$1;;
+    -t)        shift; template=$1;;
+    -v)        shift; varsfile=$1;;
+    -p)        shift; password=$1;;
+    -k)        shift; password_file=$1;;
+    -v)        verbose=1;;
+    -h|--help) _usage; exit;;
+    *)         _usage; exit 1;;
+  esac
+  shift
+done
+
+# ensure a template file was passed
+if [ -z "${template}" ]; then
+  _error "No template file supplied"
+fi
+
+# ensure read permissions to template file
+[ -r ${template} ] || _error "No such template '${template}'"
+
+# if a vars file was specified ensure read permissions and load
+if [ ! -z "${varsfile}" ] && [ -r ${varsfile} ]; then
+  if [ ! -z "${password_file}" ]; then
+    [ -r ${password_file} ] || _error "Cannot read password file '${password_file}'"
+    password=$(head -n1 ${password_file})
+  fi
+  if [ ! -z "${password}" ]; then
+    openssl aes-256-cbc -d -salt -in ${varsfile} -out ${varsfile}.unenc -k ${password}
+    [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${varsfile}"
+    varsfile=${varsfile}.unenc
+  fi
+  source $varsfile || _error "Cannot source vars file '${varsfile}'"
+fi
+
+# default outfile to template file without .tpml extension
+if [ -z "${outfile}" ]; then
+  outfile=${template//.tmpl/}
+fi
+
+# do work
+_convert_template
+_clean
