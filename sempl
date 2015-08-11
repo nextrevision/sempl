@@ -25,7 +25,7 @@ _error() {
 }
 
 _convert_template() {
-  eval "echo \"$(cat $template)\"" > $outfile
+  eval "echo \"$(cat $template | sed 's/\"/\"\\\"/g')\"" > $outfile
   if [ $? -eq 0 ]; then
     _verbose "Template written to ${outfile}"
   else

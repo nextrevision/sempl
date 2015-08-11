@@ -1,10 +1,10 @@
 [
-  { "\"${USER}\"":
+  { "${USER}":
     [
-      "\"singleqoute\"": \"'"$VAR1"'\",
-      "\"doublequote\"": "\"${VAR2}\"",
-      "\"literal\"": \"\$var\"
+      "singleqoute": '$VAR1',
+      "doublequote": "${VAR2}",
+      "literal": "\$var"
     ],
-    \""hostname"\": \""$(hostname -f)"\"
+    "hostname": "$(hostname -f)"
   }
 ]

@@ -2,6 +2,11 @@
 
 Stupid simple `bash` templating.
 
+## Requirements
+
+* bash
+* sed
+
 ## Installation
 
 ```
