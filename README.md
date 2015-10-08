@@ -9,7 +9,6 @@ templates using common bash utilities.
 
 Given the following template (`examples/config.yaml.tmpl`):
 
-    ---
     user: $USER
     password: ${password:-defaultpass}
     files:
@@ -22,7 +21,6 @@ Given the following template (`examples/config.yaml.tmpl`):
 We could expect the following output when running `sempl`:
 
     $ USER=myuser sempl -o examples/config.yaml.tmpl
-    ---
     user: myuser
     password: defaultpass
     files:
