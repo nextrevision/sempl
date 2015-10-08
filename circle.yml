@@ -1,3 +1,3 @@
 test:
   override:
-    - ./test/fixtures/testdummy -d sempl-test.sh
+    - ./test/lib/testdummy -d sempl-test.sh
