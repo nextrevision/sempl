@@ -1,0 +1,18 @@
+[
+  { "user1":
+    [
+      "singleqoute": 'myvar',
+      "doublequote": "defaultvalue",
+      "literal": "$var"
+    ],
+    "hostname": "mymachine.local"
+  },
+  # this script checks to see if VAR1 is set to a certain value
+  "VAR1 is set to myvar",
+  # this script loops through files in this directory
+  "config.json",
+  "config.json.tmpl",
+  "passfile.txt",
+  "vars.sh",
+  "vars.sh.enc"
+]

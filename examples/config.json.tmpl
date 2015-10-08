@@ -2,9 +2,26 @@
   { "${USER}":
     [
       "singleqoute": '$VAR1',
-      "doublequote": "${VAR2}",
-      "literal": "\$var"
+      "doublequote": "${VAR2:-defaultvalue}",
+      "literal": "\\$var"
     ],
     "hostname": "$(hostname -f)"
-  }
+  },
+  # this script checks to see if VAR1 is set to a certain value
+  ### begin
+  # if [[ $VAR1 == "myvar" ]]; then
+  "VAR1 is set to myvar",
+  # fi
+  ### end
+  # this script loops through files in this directory
+  ### begin
+  # declare -a files=(*)
+  # for (( i = 0; i < ${#files[*]}; ++ i )); do
+  # if [ ! -z "${files[$i+1]}" ]; then
+  "${files[$i]}",
+  # else
+  "${files[$i]}"
+  # fi
+  # done
+  ### end
 ]

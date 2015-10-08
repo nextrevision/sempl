@@ -25,7 +25,34 @@ _error() {
 }
 
 _convert_template() {
-  eval "echo \"$(cat $template | sed 's/\"/\"\\\"/g')\"" > $outfile
+  local inblock=0
+  local tmpfile=/dev/null
+  local tmptmpl=$(mktemp -t sempl.XXXXXX)
+  while IFS='' read line; do
+    if echo "$line" | grep -E -q '^\s+### begin'; then
+      inblock=1
+      tmpfile=$(mktemp -t sempl.XXXXXX)
+      continue
+    fi
+    if echo "$line" | grep -E -q '^\s+### end'; then
+      inblock=0
+      bash $tmpfile >> $tmptmpl
+      rm $tmpfile
+      continue
+    fi
+    if [ $inblock -eq 1 ]; then
+      if echo "$line" | grep -E -q '^\s+#'; then
+        echo "$line" | sed 's/# //1' >> $tmpfile
+      else
+        escaped_line=$(echo "$line" | sed 's/"/"\\\"/g')
+        echo "echo \"$escaped_line\"" >> $tmpfile
+      fi
+    else
+      echo "$line" >> $tmptmpl
+    fi
+  done < $template
+  eval "echo \"$(cat $tmptmpl | sed 's/\"/\"\\\"/g')\"" > $outfile
+  rm $tmptmpl
   if [ $? -eq 0 ]; then
     _verbose "Template written to ${outfile}"
   else
