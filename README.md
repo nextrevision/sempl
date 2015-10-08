@@ -1,6 +1,34 @@
 # sempl
 
+[![Circle CI](https://circleci.com/gh/nextrevision/sempl.svg?style=svg)](https://circleci.com/gh/nextrevision/sempl)
+
 Stupid simple `bash` templating.
+
+Uses environment variables, inherited or sourced from a file, to render
+templates using common bash utilities.
+
+Given the following template (```examples/config.yaml.tmpl```):
+
+    ---
+    user: $USER
+    password: ${password:-defaultpass}
+    files:
+      ### begin
+      # for f in $(ls); do
+      - $f
+      # done
+      ### end
+
+We could expect the following output when running `sempl`:
+
+    $ USER=myuser sempl -o examples/config.yaml.tmpl
+    ---
+    user: myuser
+    password: defaultpass
+    files:
+      - README.md
+      - examples
+      - sempl
 
 ## Requirements
 
@@ -8,6 +36,7 @@ Stupid simple `bash` templating.
 * sed
 * mktemp
 * grep (egrep)
+* openssl (if using encryption)
 
 ## Installation
 

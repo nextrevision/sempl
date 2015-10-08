@@ -1,0 +1,7 @@
+---
+user: myuser
+password: defaultpass
+files:
+  - README.md
+  - examples
+  - sempl
