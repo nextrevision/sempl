@@ -53,6 +53,22 @@ We could expect the following output when running `sempl`:
     -o              prints template to stdout
     -h              help
 
+## Encryption
+
+Creating an encryption file can easily be done by using `openssl`:
+
+    echo -e "VAR1=secretvar\nVAR2=secretvar2" > secret.txt
+    openssl aes-256-cbc -salt -in secret.txt -out secret.txt.enc
+
+## Loops
+
+It is possible to use inline bash loops for more complex logic.
+
+In order to designate where the loop should start, you must have in text
+`### begin` followed at some point by `### end` signaling the end of a loop.
+Any code you wish to execute must be preceded with a `#` and a space. Anything
+without a preceding `#` will be rendered as output by the template.
+
 ## Examples
 
 ### Template Expansion w/ Environment Vars
@@ -79,27 +95,9 @@ We could expect the following output when running `sempl`:
     ./sempl -v -k examples/passfile.txt -s examples/vars.sh \
       examples/outfile.json examples/config.json.tmpl
 
-## Encryption
+### Looping over a list of files
 
-Creating an encryption file can easily be done by using `openssl`:
-
-    echo -e "VAR1=secretvar\nVAR2=secretvar2" > secret.txt
-    openssl aes-256-cbc -salt -in secret.txt -out secret.txt.enc
-
-## Loops
-
-It is possible to use inline bash loops for more complex logic.
-
-In order to designate where the loop should start, you must have in text
-`### begin` followed at some point by `### end` signaling the end of a loop.
-Any code you wish to execute must be preceded with a `#` and a space. Anything
-without a preceding `#` will be rendered as output by the template.
-
-### Examples
-
-Looping over a list of files
-
-    # test.txt.tmpl
+Given the template `test.txt.tmpl` below:
 
     This is a text file. Siblings include:
     ### begin
@@ -112,8 +110,9 @@ Looping over a list of files
     # done
     ### end
 
-    # Could possibly render as
+Could be rendered as:
+
     This is a text file. Siblings include:
       test.txt.tmpl
-      favorite sibling1.txt
+      sibling1.txt (favorite)
       sibling2.txt
