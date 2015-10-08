@@ -1,16 +1,17 @@
 #!/bin/bash
 
 verbose=0
+stdout=0
 
 _usage() {
-  echo "usage: $0 [args]"
+  echo "usage: $0 [args] template [outfile]"
   echo
-  echo "-o [output]     output file"
-  echo "-t [template]   template file"
+  echo "args:"
   echo "-s [varsfile]   vars file"
   echo "-p [password]   decryption password"
   echo "-k [passfile]   decryption password file"
   echo "-v              verbose"
+  echo "-o              print template to stdout"
   echo "-h              help"
   echo
 }
@@ -29,19 +30,19 @@ _convert_template() {
   local tmpfile=/dev/null
   local tmptmpl=$(mktemp -t sempl.XXXXXX)
   while IFS='' read line; do
-    if echo "$line" | grep -E -q '^\s+### begin'; then
+    if echo "$line" | grep -E -q '^(\s+)?### begin'; then
       inblock=1
       tmpfile=$(mktemp -t sempl.XXXXXX)
       continue
     fi
-    if echo "$line" | grep -E -q '^\s+### end'; then
+    if echo "$line" | grep -E -q '^(\s+)?### end'; then
       inblock=0
       bash $tmpfile >> $tmptmpl
       rm $tmpfile
       continue
     fi
     if [ $inblock -eq 1 ]; then
-      if echo "$line" | grep -E -q '^\s+#'; then
+      if echo "$line" | grep -E -q '^(\s+)?#'; then
         echo "$line" | sed 's/# //1' >> $tmpfile
       else
         escaped_line=$(echo "$line" | sed 's/"/"\\\"/g')
@@ -52,12 +53,14 @@ _convert_template() {
     fi
   done < $template
   eval "echo \"$(cat $tmptmpl | sed 's/\"/\"\\\"/g')\"" > $outfile
+  local rc=$?
   rm $tmptmpl
-  if [ $? -eq 0 ]; then
+  if [ $rc -eq 0 ]; then
     _verbose "Template written to ${outfile}"
   else
     _error "Could not convert template ${template}"
   fi
+  return $rc
 }
 
 _clean() {
@@ -66,49 +69,59 @@ _clean() {
   fi
 }
 
-[ -z $1 ] && { _usage; exit 1; }
+_main() {
+  [ -z "$1" ] && { _usage; exit 1; }
 
-while [ ! -z $1 ]; do
-  case $1 in
-    -o)        shift; outfile=$1;;
-    -t)        shift; template=$1;;
-    -s)        shift; varsfile=$1;;
-    -p)        shift; password=$1;;
-    -k)        shift; password_file=$1;;
-    -v)        verbose=1;;
-    -h|--help) _usage; exit;;
-    *)         _usage; exit 1;;
-  esac
-  shift
-done
+  while [ ! -z "$1" ]; do
+    case "$1" in
+      -s)        shift; varsfile=$1;;
+      -p)        shift; password=$1;;
+      -k)        shift; password_file=$1;;
+      -v)        verbose=1;;
+      -o)        stdout=1;;
+      -h|--help) _usage; exit;;
+      *)         template=${1}; shift; outfile=${1};;
+    esac
+    shift
+  done
 
-# ensure a template file was passed
-if [ -z "${template}" ]; then
-  _error "No template file supplied"
-fi
-
-# ensure read permissions to template file
-[ -r ${template} ] || _error "No such template '${template}'"
-
-# if a vars file was specified ensure read permissions and load
-if [ ! -z "${varsfile}" ] && [ -r ${varsfile} ]; then
-  if [ ! -z "${password_file}" ]; then
-    [ -r ${password_file} ] || _error "Cannot read password file '${password_file}'"
-    password=$(head -n1 ${password_file})
+  # ensure a template file was passed
+  if [ -z "${template}" ]; then
+    _error "No template file supplied"
   fi
-  if [ ! -z "${password}" ]; then
-    openssl aes-256-cbc -d -salt -in ${varsfile} -out ${varsfile}.unenc -k ${password}
-    [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${varsfile}"
-    varsfile=${varsfile}.unenc
+
+  # ensure read permissions to template file
+  [ -r ${template} ] || _error "No such template '${template}'"
+
+  # if a vars file was specified ensure read permissions and load
+  if [ ! -z "${varsfile}" ]; then
+    if [ ! -z "${password_file}" ]; then
+      [ -r ${password_file} ] || _error "Cannot read password file '${password_file}'"
+      password=$(head -n1 ${password_file})
+    fi
+    if [ ! -z "${password}" ]; then
+      openssl aes-256-cbc -d -salt -in ${varsfile} -out ${varsfile}.unenc -k ${password}
+      [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${varsfile}"
+      varsfile=${varsfile}.unenc
+    fi
+    source $varsfile || _error "Cannot source vars file '${varsfile}'"
   fi
-  source $varsfile || _error "Cannot source vars file '${varsfile}'"
-fi
 
-# default outfile to template file without .tpml extension
-if [ -z "${outfile}" ]; then
-  outfile=${template//.tmpl/}
-fi
+  # default outfile to template file without .tpml extension
+  if [ -z "${outfile}" ]; then
+    outfile=${template//.tmpl/}
+  fi
+  if [ $stdout -eq 1 ]; then
+    outfile=/dev/stdout
+  fi
 
-# do work
-_convert_template
-_clean
+  # do work
+  _convert_template
+  _clean
+  return 0
+}
+
+# test if script is being called or sourced
+if [[ $(basename ${0//-/}) == "sempl" ]]; then
+  _main "$@"
+fi

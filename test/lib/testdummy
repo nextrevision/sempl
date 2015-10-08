@@ -1,0 +1,215 @@
+#!/bin/bash -e
+
+__dummy_version=0.1.0
+
+# define variables
+__dummy_red='\033[0;31m'
+__dummy_green='\033[0;32m'
+__dummy_clear='\033[0m'
+__dummy_cmd_rc=0
+__dummy_cmd_out=.__dummy_cmd_out
+__dummy_debug=0
+__dummy_debug_out=.__dummy_debug_out
+__dummy_verbose=0
+__dummy_verbose_out=.__dummy_verbose_out
+__dummy_nocolor=0
+__dummy_tests=0
+__dummy_failed_tests=0
+__dummy_start_time=$(date +%s)
+
+# public  functions
+describe() {
+  echo $1
+}
+
+cmd() {
+  ( set +e; eval "${1}" 2>&1 > ${__dummy_cmd_out} ) \
+    && __dummy_cmd_rc=0 || __dummy_cmd_rc=$?
+}
+
+assert_rc() {
+  if [ $__dummy_cmd_rc -ne $1 ]; then
+    if [ $__dummy_verbose -eq 1 ]; then
+      __dummy_write_verbose "expecting return code '${1}'"
+      __dummy_write_verbose "got return code '${__dummy_cmd_rc}'"
+    fi
+    return 1
+  fi
+  return 0
+}
+
+assert_rc_not() {
+  if [ $__dummy_cmd_rc -eq $1 ]; then
+    if [ $__dummy_verbose -eq 1 ]; then
+      __dummy_write_verbose "expecting return code to not be '${1}'"
+      __dummy_write_verbose "got return code '${__dummy_cmd_rc}'"
+    fi
+    return 1
+  fi
+  return 0
+}
+
+assert_content() {
+  grep -- "${1}" ${__dummy_cmd_out}
+  local rc=$?
+  if [ $rc -ne 0 ]; then
+    __dummy_write_verbose "Content '${1}' not found in output"
+  fi
+  return $rc
+}
+
+assert_content_not() {
+  ! grep -- "${1}" ${__dummy_cmd_out}
+  local rc=$?
+  if [ $rc -ne 0 ]; then
+    __dummy_write_verbose "Content '${1}' not found in output"
+  fi
+  return $rc
+}
+
+assert_regex() {
+  grep -E -- "${1}" ${__dummy_cmd_out}
+  local rc=$?
+  if [ $rc -ne 0 ]; then
+    __dummy_write_verbose "Content '${1}' not found in output"
+  fi
+  return $rc
+}
+
+assert_regex_not() {
+  ! grep -E -- "${1}" ${__dummy_cmd_out}
+  local rc=$?
+  if [ $rc -ne 0 ]; then
+    __dummy_write_verbose "Content '${1}' not found in output"
+  fi
+  return $rc
+}
+
+# private functions
+__dummy_usage() {
+  echo "usage: $0 [args] specfile"
+  echo
+  echo "-h|--help     Help"
+  echo "-d|--debug    Enabled debug logging"
+  echo "-v|--verbose  Enables verbose logging"
+  echo "--nocolor     Disable color output"
+  echo "--version     Prints the version and exits"
+  echo
+}
+
+__dummy_version() {
+  echo "version ${__dummy_version}"
+}
+
+__dummy_error() {
+  echo -e "${__dummy_red}ERROR: $1${__dummy_clear}"
+  exit 1
+}
+
+__dummy_write_verbose() {
+  echo "$1" >> $__dummy_verbose_out
+}
+
+__dummy_print_status() {
+  case $2 in
+    PASS) s="${__dummy_green}PASS${__dummy_clear}";;
+    FAIL) s="${__dummy_red}FAIL${__dummy_clear}";;
+    *)    s="????";;
+  esac
+  printf "  %-52s [${s}]\n" "${1//_/ }"
+  if [ $__dummy_verbose -eq 1 ]; then
+    while read output; do
+      echo "    ${output}";
+    done < $__dummy_verbose_out
+  fi
+  if [[ $2 == "FAIL" ]]; then
+    if [ $__dummy_debug -eq 1 ]; then
+      while read output; do
+        echo "    ${output}";
+      done < $__dummy_debug_out
+    fi
+  fi
+}
+
+__dummy_print_summary() {
+  printf "%61s\n" | tr " " "-"
+  printf "Tests:  %3d  |  " $__dummy_tests
+  printf "Passed:  %3d  |  " $(($__dummy_tests - $__dummy_failed_tests))
+  printf "Failed:  %3d  |  " $__dummy_failed_tests
+  printf "Time:  %3ds" $((`date +%s` - $__dummy_start_time))
+  printf "\n"
+}
+
+__dummy_run_test() {
+  local rc=0
+  __dummy_cmd_rc=0
+  > $__dummy_cmd_out
+  > $__dummy_debug_out
+  > $__dummy_verbose_out
+  set +e
+  (
+    set -ex
+    eval ${1}
+  ) &> $__dummy_debug_out
+  rc=$?
+  set +ex
+  if [ $rc -eq 0 ]; then
+    __dummy_print_status $1 PASS
+  else
+    __dummy_print_status $1 FAIL
+    let __dummy_failed_tests+=1
+  fi
+  let __dummy_tests+=1
+  [ -f $__dummy_debug_out ] && rm $__dummy_debug_out
+  [ -f $__dummy_verbose_out ] && rm $__dummy_verbose_out
+}
+
+# allow for sourcing
+if [[ $(basename ${0//-/}) == "testdummy" ]]; then
+  # parse cli args
+  until [ -z $1 ]; do
+    case $1 in
+      -h|--help)    __dummy_usage && exit;;
+      -d|--debug)   __dummy_debug=1; __dummy_verbose=1;;
+      -v|--verbose) __dummy_verbose=1;;
+      --nocolor)    __dummy_nocolor=1;;
+      --version)    __dummy_version && exit;;
+      *)            __dummy_specfile=$1;;
+    esac
+    shift
+  done
+
+  # disable color
+  if [ $__dummy_nocolor -eq 1 ]; then
+    __dummy_red=''
+    __dummy_green=''
+    __dummy_clear=''
+  fi
+
+  # ensure we can read the spec
+  [ -z ${__dummy_specfile} ] && __dummy_usage && __dummy_error "Must pass a spec file"
+  [ -f ${__dummy_specfile} ] || __dummy_error "No such file ${__dummy_specfile}"
+  [ -r ${__dummy_specfile} ] || __dummy_error "Cannot read ${__dummy_specfile}"
+
+  # source the spec functions
+  source ${__dummy_specfile} 2>&1 > /dev/null
+
+  # call the spec functions
+  while read line; do
+    if echo $line | grep -q '^it_'; then
+      t=$(echo $line | cut -d'(' -f1)
+      if grep -B1 $t ${__dummy_specfile} | grep -q '^describe '; then
+        eval $(grep -B1 $t ${__dummy_specfile} | grep '^describe ')
+      elif grep -B1 $t ${__dummy_specfile} | grep -q '^$'; then
+        echo
+      fi
+      __dummy_run_test "${t}"
+    fi
+  done < ${__dummy_specfile}
+
+  # print summary
+  __dummy_print_summary
+
+  # exit if failed tests
+  [ $__dummy_failed_tests -eq 0 ] || exit 1
+fi

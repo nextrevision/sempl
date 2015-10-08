@@ -19,14 +19,14 @@ chmod +x sempl
 ## Usage
 
 ```
-usage: ./sempl [args]
+usage: ./sempl [args] template [outfile]
 
--o [output]     output file
--t [template]   template file
+args:
 -s [varsfile]   vars file
 -p [password]   decryption password
 -k [passfile]   decryption password file
 -v              verbose
+-o              prints template to stdout
 -h              help
 ```
 
@@ -36,34 +36,34 @@ usage: ./sempl [args]
 
 ```
 source examples/vars.sh
-./sempl -v -t examples/config.json.tmpl
+./sempl -v examples/config.json.tmpl
 ```
 
 ### Template Expansion w/ Vars File
 
 ```
-./sempl -v -t examples/config.json.tmpl -s examples/vars.sh
+./sempl -v -s examples/vars.sh examples/config.json.tmpl
 ```
 
 ### Template Expansion w/ Outfile
 
 ```
-./sempl -v -t examples/config.json.tmpl -s examples/vars.sh \
-  -o examples/outfile.json
+./sempl -v -s examples/vars.sh examples/config.json.tmpl \
+  examples/outfile.json
 ```
 
 ### Template Expansion w/ Decryption Key
 
 ```
-./sempl -v -t examples/config.json.tmpl -s examples/vars.sh \
-  -o examples/outfile.json -p mypassword
+./sempl -v -p mypassword -s examples/vars.sh \
+  examples/config.json.tmpl examples/outfile.json
 ```
 
 ### Template Expansion w/ Decryption File
 
 ```
-./sempl -v -t examples/config.json.tmpl -s examples/vars.sh \
-  -o examples/outfile.json -k examples/passfile.txt
+./sempl -v -k examples/passfile.txt -s examples/vars.sh \
+  examples/outfile.json examples/config.json.tmpl
 ```
 
 ## Encryption
