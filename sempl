@@ -65,11 +65,16 @@ _convert_template() {
 
 _clean() {
   if [[ ${varsfile: -6} == ".unenc" ]]; then
-    rm ${varsfile}
+    rm -f ${varsfile}
   fi
 }
 
 _main() {
+  local template=''
+  local outfile=''
+  local varsfile=''
+  local password=''
+  local password_file=''
   [ -z "$1" ] && { _usage; exit 1; }
 
   while [ ! -z "$1" ]; do
