@@ -1,7 +1,12 @@
 #!/bin/bash
 
-verbose=0
-stdout=0
+__sempl_verbose=0
+__sempl_stdout=0
+__sempl_template=''
+__sempl_outfile=''
+__sempl_varsfile=''
+__sempl_password=''
+__sempl_password_file=''
 
 _usage() {
   echo "usage: $0 [args] template [outfile]"
@@ -17,7 +22,7 @@ _usage() {
 }
 
 _verbose() {
-  [ $verbose -eq 1 ] && echo ${1}
+  [ $__sempl_verbose -eq 1 ] && echo ${1}
 }
 
 _error() {
@@ -26,98 +31,95 @@ _error() {
 }
 
 _convert_template() {
-  local inblock=0
-  local tmpfile=/dev/null
-  local tmptmpl=$(mktemp -t sempl.XXXXXX)
-  while IFS='' read line; do
-    if echo "$line" | grep -E -q '^(\s+)?### begin'; then
-      inblock=1
-      tmpfile=$(mktemp -t sempl.XXXXXX)
+  local __in_block=0
+  local __tmp_script=/dev/null
+  local __tmp_tmpl=$(mktemp -t sempl.XXXXXX)
+  local __escaped_line=''
+  while IFS='' read __line; do
+    if echo "${__line}" | grep -E -q '^(\s+)?###(\s)?begin'; then
+      __in_block=1
+      __tmp_script=$(mktemp -t sempl.XXXXXX)
       continue
     fi
-    if echo "$line" | grep -E -q '^(\s+)?### end'; then
-      inblock=0
-      bash $tmpfile >> $tmptmpl
-      rm $tmpfile
+    if echo "${__line}" | grep -E -q '^(\s+)?###(\s)?end'; then
+      __in_block=0
+      bash $__tmp_script >> $__tmp_tmpl
+      rm $__tmp_script
       continue
     fi
-    if [ $inblock -eq 1 ]; then
-      if echo "$line" | grep -E -q '^(\s+)?#'; then
-        echo "$line" | sed 's/# //1' >> $tmpfile
+    if [ $__in_block -eq 1 ]; then
+      if echo "${__line}" | grep -E -q '^(\s+)?#'; then
+        echo "${__line}" | sed 's/# //1' >> $__tmp_script
       else
-        escaped_line=$(echo "$line" | sed 's/"/"\\\"/g')
-        echo "echo \"$escaped_line\"" >> $tmpfile
+        __escaped_line=$(echo "${__line}" | sed 's/"/"\\\"/g')
+        echo "echo \"${__escaped_line}\"" >> $__tmp_script
       fi
     else
-      echo "$line" >> $tmptmpl
+      echo "${__line}" >> $__tmp_tmpl
     fi
-  done < $template
-  eval "echo \"$(cat $tmptmpl | sed 's/\"/\"\\\"/g')\"" > $outfile
-  local rc=$?
-  rm $tmptmpl
-  if [ $rc -eq 0 ]; then
-    _verbose "Template written to ${outfile}"
+  done < $__sempl_template
+  eval "echo \"$(cat ${__tmp_tmpl} | sed 's/\"/\"\\\"/g')\"" > $__sempl_outfile
+  local __rc=$?
+  rm $__tmp_tmpl
+  if [ $__rc -eq 0 ]; then
+    _verbose "Template written to ${__sempl_outfile}"
   else
-    _error "Could not convert template ${template}"
+    _error "Could not convert template ${__sempl_template}"
   fi
-  return $rc
+  return $__rc
 }
 
 _clean() {
-  if [[ ${varsfile: -6} == ".unenc" ]]; then
-    rm -f ${varsfile}
+  if [[ ${__sempl_varsfile: -6} == ".unenc" ]]; then
+    rm -f ${__sempl_varsfile}
   fi
 }
 
 _main() {
-  local template=''
-  local outfile=''
-  local varsfile=''
-  local password=''
-  local password_file=''
   [ -z "$1" ] && { _usage; exit 1; }
 
   while [ ! -z "$1" ]; do
     case "$1" in
-      -s)        shift; varsfile=$1;;
-      -p)        shift; password=$1;;
-      -k)        shift; password_file=$1;;
-      -v)        verbose=1;;
-      -o)        stdout=1;;
+      -s)        shift; __sempl_varsfile=${1};;
+      -p)        shift; __sempl_password=${1};;
+      -k)        shift; __sempl_password_file=${1};;
+      -v)        __sempl_verbose=1;;
+      -o)        __sempl_stdout=1;;
       -h|--help) _usage; exit;;
-      *)         template=${1}; shift; outfile=${1};;
+      *)         __sempl_template=${1};
+                 shift; __sempl_outfile=${1};;
     esac
     shift
   done
 
   # ensure a template file was passed
-  if [ -z "${template}" ]; then
+  if [ -z "${__sempl_template}" ]; then
     _error "No template file supplied"
   fi
 
   # ensure read permissions to template file
-  [ -r ${template} ] || _error "No such template '${template}'"
+  [ -r ${__sempl_template} ] || _error "No such template '${__sempl_template}'"
 
   # if a vars file was specified ensure read permissions and load
-  if [ ! -z "${varsfile}" ]; then
-    if [ ! -z "${password_file}" ]; then
-      [ -r ${password_file} ] || _error "Cannot read password file '${password_file}'"
-      password=$(head -n1 ${password_file})
+  if [ ! -z "${__sempl_varsfile}" ]; then
+    if [ ! -z "${__sempl_password_file}" ]; then
+      [ -r ${__sempl_password_file} ] || _error "Cannot read password file '${__sempl_password_file}'"
+      __sempl_password=$(head -n1 ${__sempl_password_file})
     fi
-    if [ ! -z "${password}" ]; then
-      openssl aes-256-cbc -d -salt -in ${varsfile} -out ${varsfile}.unenc -k ${password}
-      [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${varsfile}"
-      varsfile=${varsfile}.unenc
+    if [ ! -z "${__sempl_password}" ]; then
+      openssl aes-256-cbc -d -salt -in ${__sempl_varsfile} -out ${__sempl_varsfile}.unenc -k ${__sempl_password}
+      [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${__sempl_varsfile}"
+      __sempl_varsfile=${__sempl_varsfile}.unenc
     fi
-    source $varsfile || _error "Cannot source vars file '${varsfile}'"
+    source $__sempl_varsfile || _error "Cannot source vars file '${__sempl_varsfile}'"
   fi
 
   # default outfile to template file without .tpml extension
-  if [ -z "${outfile}" ]; then
-    outfile=${template//.tmpl/}
+  if [ -z "${__sempl_outfile}" ]; then
+    __sempl_outfile=${__sempl_template//.tmpl/}
   fi
-  if [ $stdout -eq 1 ]; then
-    outfile=/dev/stdout
+  if [ $__sempl_stdout -eq 1 ]; then
+    __sempl_outfile=/dev/stdout
   fi
 
   # do work

@@ -8,12 +8,12 @@ it_displays_usage() {
   assert_content "-h "
 }
 it_displays_verbose() {
-  cmd "verbose=1 _verbose 'test out'"
+  cmd "__sempl_verbose=1 _verbose 'test out'"
   assert_rc 0
   assert_content "test out"
 }
 it_is_not_verbose() {
-  cmd "verbose=0 _verbose 'test out'"
+  cmd "__sempl_verbose=0 _verbose 'test out'"
   assert_content_not "test out"
 }
 it_displays_error() {
@@ -23,7 +23,7 @@ it_displays_error() {
 }
 it_cleans_unencrypted_files() {
   touch test.unenc
-  cmd "varsfile=test.unenc _clean"
+  cmd "__sempl_varsfile=test.unenc _clean"
   assert_rc 0
   ! test -f test.unenc
 }
@@ -84,42 +84,42 @@ it_sources_varsfile_with_bad_password() {
 
 describe "test template conversion"
 it_converts_template_001_variable_default() {
-  cmd "template=./test/fixtures/001_variable_default.tmpl outfile=/dev/stdout _convert_template"
+  cmd "__sempl_template=./test/fixtures/001_variable_default.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content "testvar=defaultvalue"
 }
 it_converts_template_002_variable_escaping() {
-  cmd "template=./test/fixtures/002_variable_escaping.tmpl outfile=/dev/stdout _convert_template"
+  cmd "__sempl_template=./test/fixtures/002_variable_escaping.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content 'testvar=$testvar'
 }
 it_converts_template_003_variable_expansion() {
-  cmd "testvar=testvalue template=./test/fixtures/003_variable_expansion.tmpl outfile=/dev/stdout _convert_template"
+  cmd "testvar=testvalue __sempl_template=./test/fixtures/003_variable_expansion.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content 'testvar=testvalue'
 }
 it_converts_template_004_variable_expansion() {
-  cmd "testvar=testvalue template=./test/fixtures/004_variable_expansion.tmpl outfile=/dev/stdout _convert_template"
+  cmd "testvar=testvalue __sempl_template=./test/fixtures/004_variable_expansion.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content 'testvar=testvalue'
 }
 it_converts_template_005_double_quote() {
-  cmd "testvar=testvalue template=./test/fixtures/005_double_quote.tmpl outfile=/dev/stdout _convert_template"
+  cmd "testvar=testvalue __sempl_template=./test/fixtures/005_double_quote.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content 'testvar="testvalue"'
 }
 it_converts_template_006_single_quote() {
-  cmd "testvar=testvalue template=./test/fixtures/006_single_quote.tmpl outfile=/dev/stdout _convert_template"
+  cmd "testvar=testvalue __sempl_template=./test/fixtures/006_single_quote.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content "testvar='testvalue'"
 }
 it_converts_template_007_bash_inline() {
-  cmd "testvar=testvalue template=./test/fixtures/007_bash_inline.tmpl outfile=/dev/stdout _convert_template"
+  cmd "testvar=testvalue __sempl_template=./test/fixtures/007_bash_inline.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_content 'testvar="inline"'
 }
 it_converts_template_008_bash_loop() {
-  cmd "testvar=testvalue template=./test/fixtures/008_bash_loop.tmpl outfile=/dev/stdout _convert_template"
+  cmd "testvar=testvalue __sempl_template=./test/fixtures/008_bash_loop.tmpl __sempl_outfile=/dev/stdout _convert_template"
   assert_rc 0
   assert_regex '^  1$'
   assert_regex '^  2$'
