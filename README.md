@@ -52,6 +52,8 @@ We could expect the following output when running `sempl`:
     -v              verbose
     -o              prints template to stdout
     -h              help
+    --version       print version and exit
+    --update        update script to latest version
 
 ## Encryption
 

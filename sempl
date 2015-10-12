@@ -1,5 +1,8 @@
 #!/bin/bash
 
+__sempl_path=$0
+__sempl_version="0.2.2"
+
 __sempl_verbose=0
 __sempl_stdout=0
 __sempl_template=''
@@ -18,7 +21,13 @@ _usage() {
   echo "-v              verbose"
   echo "-o              print template to stdout"
   echo "-h              help"
+  echo "--version       print version and exit"
+  echo "--update        update script to latest version"
   echo
+}
+
+_version() {
+  echo "version ${__sempl_version}"
 }
 
 _verbose() {
@@ -75,6 +84,16 @@ _clean() {
   fi
 }
 
+_update() {
+  local cmd=''
+  which curl &> /dev/null && cmd="curl --silent -o ${__sempl_path}"
+  which wget &> /dev/null && cmd="wget -q -O ${__sempl_path}"
+  [ -z "$cmd" ] && _error "unable to find curl or wget in PATH"
+  eval "$cmd https://raw.githubusercontent.com/nextrevision/sempl/master/sempl"
+  local version=$(grep '__sempl_version=' $__sempl_path | cut -d'=' -f2)
+  echo "Updated from ${__sempl_version} to ${version}"
+}
+
 _main() {
   [ -z "$1" ] && { _usage; exit 1; }
 
@@ -86,6 +105,8 @@ _main() {
       -v)        __sempl_verbose=1;;
       -o)        __sempl_stdout=1;;
       -h|--help) _usage; exit;;
+      --version) _version; exit;;
+      --update)  _update; exit;;
       *)         __sempl_template=${1};
                  shift; __sempl_outfile=${1};;
     esac

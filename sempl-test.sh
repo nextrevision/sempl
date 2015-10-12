@@ -16,6 +16,10 @@ it_is_not_verbose() {
   cmd "__sempl_verbose=0 _verbose 'test out'"
   assert_content_not "test out"
 }
+it_displays_version() {
+  cmd "__sempl_version=1.2.3 _version"
+  assert_content "version 1.2.3"
+}
 it_displays_error() {
   cmd "_error 'test error'"
   assert_rc 1
