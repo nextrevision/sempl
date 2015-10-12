@@ -71,6 +71,12 @@ In order to designate where the loop should start, you must have in text
 Any code you wish to execute must be preceded with a `#` and a space. Anything
 without a preceding `#` will be rendered as output by the template.
 
+## Caveats
+
+* A backslash must be doubly escaped (i.e. `\\`)
+* Redirection in command substitution does not work (i.e. `$(cat blah 2>&1)`)
+* Quotes (single and double) must be closed or escaped
+
 ## Examples
 
 ### Template Expansion w/ Environment Vars

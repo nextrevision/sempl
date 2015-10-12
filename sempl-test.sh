@@ -129,3 +129,31 @@ it_converts_template_008_bash_loop() {
   assert_regex '^  2$'
   assert_regex '^  3$'
 }
+it_converts_template_010_symbol_test() {
+  cmd "__sempl_template=./test/fixtures/010_symbol_test.tmpl __sempl_outfile=/dev/stdout _convert_template"
+  assert_rc 0
+  assert_regex '^>test$'
+  assert_regex '^>test$'
+  assert_regex '^!test$'
+  assert_regex '^\\test$'
+  assert_regex '^#test$'
+  assert_regex '^\.test$'
+  assert_regex '^@test$'
+  assert_regex '^%test$'
+  assert_regex '^\^test$'
+  assert_regex '^\&test$'
+  assert_regex '^\*test$'
+  assert_regex '^\(test$'
+  assert_regex '^\)test$'
+  assert_regex '^\-test$'
+  assert_regex '^\+test$'
+  assert_regex '^\=test$'
+  assert_regex '^\{test$'
+  assert_regex '^\}test$'
+  assert_regex '^\|test$'
+  assert_regex '^\/test$'
+  assert_regex '^\,test$'
+  assert_regex '^\;test$'
+  assert_regex '^\:test$'
+  assert_regex '^\_test$'
+}
