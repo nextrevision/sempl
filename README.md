@@ -36,7 +36,7 @@ We could expect the following output when running `sempl`:
 ### Requirements
 
 * bash
-* sed
+* sed (GNU)
 * mktemp
 * grep (egrep)
 * openssl (if using encryption)

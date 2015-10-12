@@ -69,10 +69,10 @@ _convert_template() {
   done < $__sempl_template
   eval "echo \"$(cat ${__tmp_tmpl} \
                    | sed 's/\"/\"\\\"/g' \
-                   | sed 's/\</\\\</g' \
-                   | sed 's/\>/\\\>/g')\"" \
-    | sed 's/\\\>/\>/g' \
-    | sed 's/\\\</\</g' \
+                   | sed 's/</\\</g' \
+                   | sed 's/>/\\>/g')\"" \
+    | sed 's/\\>/>/g' \
+    | sed 's/\\</</g' \
     > $__sempl_outfile
   local __rc=$?
   rm $__tmp_tmpl
