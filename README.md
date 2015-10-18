@@ -55,26 +55,6 @@ We could expect the following output when running `sempl`:
     --version       print version and exit
     --update        update script to latest version
 
-## Encryption
-
-`crypttool` is a very simple wrapper around the openssl command that
-can encrypt, decrypt, or edit a file. `sempl` can take an encrypted file
-and decrypt it at runtime with a password/passfile specified as an argument.
-This allows storing of secrets in variable files and decryption at the point
-of rendering a template file.
-
-### Encrypting a Varsfile
-
-    ./crypttool -p mypassword encrypt examples/vars.sh
-
-### Decrypting a Varsfile
-
-    ./crypttool -p mypassword decrypt examples/vars.sh.enc
-
-### Editing an Encrypted Varsfile
-
-    ./crypttool -p mypassword edit examples/vars.sh.enc
-
 ## Loops
 
 It is possible to use inline bash loops for more complex logic.
@@ -137,3 +117,23 @@ Could be rendered as:
       test.txt.tmpl
       sibling1.txt (favorite)
       sibling2.txt
+
+## Encryption
+
+`crypttool` is a very simple wrapper around the openssl command that
+can encrypt, decrypt, or edit a file. `sempl` can take an encrypted file
+and decrypt it at runtime with a password/passfile specified as an argument.
+This allows storing of secrets in variable files and decryption at the point
+of rendering a template file.
+
+### Encrypting a Varsfile
+
+    ./crypttool -p mypassword encrypt examples/vars.sh
+
+### Decrypting a Varsfile
+
+    ./crypttool -p mypassword decrypt examples/vars.sh.enc
+
+### Editing an Encrypted Varsfile
+
+    ./crypttool -p mypassword edit examples/vars.sh.enc
