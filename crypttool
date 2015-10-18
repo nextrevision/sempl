@@ -1,0 +1,116 @@
+#!/bin/bash
+
+__crypttool_editor=${EDITOR:-vim}
+__crypttool_verbose=0
+__crypttool_command=''
+__crypttool_varsfile=''
+__crypttool_password=''
+__crypttool_password_file=''
+__crypttool_decrypted_file=''
+__crypttool_encrypted_file=''
+
+_usage() {
+  echo "usage: $0 [args] command varsfile"
+  echo
+  echo "commands:"
+  echo "  edit            edit the varsfile (opens with ${EDITOR})"
+  echo "  decrypt         decrypt the varsfile"
+  echo "  encrypt         encrypt the varsfile"
+  echo
+  echo "args:"
+  echo "  -p [password]   decryption password"
+  echo "  -k [passfile]   decryption password file"
+  echo "  -v              verbose"
+  echo "  -h              help"
+  echo
+}
+
+_verbose() {
+  [ $__crypttool_verbose -eq 1 ] && echo ${1}
+}
+
+_error() {
+  echo "ERROR: ${1}"
+  exit 1
+}
+
+_clean() {
+  _verbose "Removing temporary files"
+  if ! [ -z "${__crypttool_decrypted_file}" ]; then
+    [ -f "${__crypttool_decrypted_file}" ] && rm $__crypttool_decrypted_file
+  fi
+  if ! [ -z "${__crypttool_encrypted_file}" ]; then
+    [ -f "${__crypttool_encrypted_file}" ] && rm $__crypttool_encrypted_file
+  fi
+}
+
+_decrypt() {
+  local varsfile=${1:-$__crypttool_varsfile}
+  _verbose "Decrypting file ${varsfile}"
+  __crypttool_decrypted_file=$(mktemp -t crypttool.XXXXXX)
+  openssl aes-256-cbc -d -salt -in ${varsfile} -out ${__crypttool_decrypted_file} -k ${__crypttool_password}
+  [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${varsfile}"
+}
+
+_encrypt() {
+  local varsfile=${1:-$__crypttool_varsfile}
+  _verbose "Encrypting file ${varsfile}"
+  __crypttool_encrypted_file=$(mktemp -t crypttool.XXXXXX)
+  echo "${__crypttool_password}" | openssl aes-256-cbc -salt -in ${varsfile} -out ${__crypttool_encrypted_file} -pass stdin
+  [ $? -eq 0 ] || _error "Unable to encrypt password vars file ${varsfile}"
+}
+
+_edit() {
+  _decrypt
+  $EDITOR $__crypttool_decrypted_file
+  read -p "Commit and encrypt the changes (y/n)? "
+  if [[ $REPLY == 'y' ]]; then
+    _encrypt $__crypttool_decrypted_file
+    mv $__crypttool_encrypted_file $__crypttool_varsfile
+  fi
+}
+
+_main() {
+  [ -z "$1" ] && { _usage; exit 1; }
+
+  while [ ! -z "$1" ]; do
+    case "$1" in
+      -p)        shift; __crypttool_password=${1};;
+      -k)        shift; __crypttool_password_file=${1};;
+      -v)        __crypttool_verbose=1;;
+      -h|--help) _usage; exit;;
+      *)         __crypttool_command=${1};
+                 shift; __crypttool_varsfile=${1};;
+    esac
+    shift
+  done
+
+  if [ ! -z "${__crypttool_password_file}" ]; then
+    [ -r ${__crypttool_password_file} ] || _error "Cannot read password file '${__crypttool_password_file}'"
+    __crypttool_password=$(head -n1 ${__crypttool_password_file})
+  fi
+
+  [ -z "${__crypttool_password}" ] && _error "must specify a password"
+  [ -z "${__crypttool_varsfile}" ] && _error "must specify a varsfile"
+  [ -r "${__crypttool_varsfile}" ] || _error "cannot read varsfile ${__crypttool_varsfile}"
+
+  case "${__crypttool_command}" in
+    edit)     _edit;;
+    decrypt)  _decrypt
+              mv ${__crypttool_decrypted_file} ${__crypttool_varsfile//.enc/}.unenc
+              echo "Decrypted file to ${__crypttool_varsfile//.enc/}.unenc";;
+    encrypt)  _encrypt
+              mv ${__crypttool_encrypted_file} ${__crypttool_varsfile//.unenc/}.enc
+              echo "Encrypted file to ${__crypttool_varsfile//.unenc/}.enc";;
+    *)        _error "Invalid command: ${__crypttool_command}";;
+  esac
+
+  _clean
+
+  return 0
+}
+
+# test if script is being called or sourced
+if [[ $(basename ${0//-/}) == "crypttool" ]]; then
+  _main "$@"
+fi

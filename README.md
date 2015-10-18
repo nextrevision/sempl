@@ -57,10 +57,23 @@ We could expect the following output when running `sempl`:
 
 ## Encryption
 
-Creating an encryption file can easily be done by using `openssl`:
+`crypttool` is a very simple wrapper around the openssl command that
+can encrypt, decrypt, or edit a file. `sempl` can take an encrypted file
+and decrypt it at runtime with a password/passfile specified as an argument.
+This allows storing of secrets in variable files and decryption at the point
+of rendering a template file.
 
-    echo -e "VAR1=secretvar\nVAR2=secretvar2" > secret.txt
-    openssl aes-256-cbc -salt -in secret.txt -out secret.txt.enc
+### Encrypting a Varsfile
+
+    ./crypttool -p mypassword encrypt examples/vars.sh
+
+### Decrypting a Varsfile
+
+    ./crypttool -p mypassword decrypt examples/vars.sh.enc
+
+### Editing an Encrypted Varsfile
+
+    ./crypttool -p mypassword edit examples/vars.sh.enc
 
 ## Loops
 
