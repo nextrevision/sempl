@@ -18,8 +18,8 @@ _usage() {
   echo "  encrypt         encrypt the varsfile"
   echo
   echo "args:"
-  echo "  -p [password]   decryption password"
-  echo "  -k [passfile]   decryption password file"
+  echo "  -p [password]   (en|de)cryption password"
+  echo "  -k [passfile]   (en|de)cryption password file"
   echo "  -v              verbose"
   echo "  -h              help"
   echo
@@ -97,8 +97,8 @@ _main() {
   case "${__crypttool_command}" in
     edit)     _edit;;
     decrypt)  _decrypt
-              mv ${__crypttool_decrypted_file} ${__crypttool_varsfile//.enc/}.unenc
-              echo "Decrypted file to ${__crypttool_varsfile//.enc/}.unenc";;
+              mv ${__crypttool_decrypted_file} ${__crypttool_varsfile//.enc/}
+              echo "Decrypted file to ${__crypttool_varsfile//.enc/}";;
     encrypt)  _encrypt
               mv ${__crypttool_encrypted_file} ${__crypttool_varsfile//.unenc/}.enc
               echo "Encrypted file to ${__crypttool_varsfile//.unenc/}.enc";;
