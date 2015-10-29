@@ -157,3 +157,12 @@ it_converts_template_010_symbol_test() {
   assert_regex '^\:test$'
   assert_regex '^\_test$'
 }
+it_succeeds_on_missing_var_without_fail_option() {
+  cmd "__sempl_template=./test/fixtures/011_variable_missing.tmpl __sempl_outfile=/dev/stdout _convert_template"
+  assert_rc 0
+  assert_regex '^testvar=$'
+}
+it_fails_on_missing_var_with_fail_option() {
+  cmd "__sempl_fail_missing=1 __sempl_template=./test/fixtures/011_variable_missing.tmpl __sempl_outfile=/dev/stdout _convert_template"
+  assert_rc 1
+}

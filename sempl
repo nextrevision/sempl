@@ -5,6 +5,7 @@ __sempl_version=0.2.4
 
 __sempl_verbose=0
 __sempl_stdout=0
+__sempl_fail_missing=0
 __sempl_template=''
 __sempl_outfile=''
 __sempl_varsfile=''
@@ -20,6 +21,7 @@ _usage() {
   echo "-k [passfile]   decryption password file"
   echo "-v              verbose"
   echo "-o              print template to stdout"
+  echo "-f              fail if a variable is unset with no default"
   echo "-h              help"
   echo "--version       print version and exit"
   echo "--update        update script to latest version"
@@ -67,6 +69,7 @@ _convert_template() {
       echo "${__line}" >> $__tmp_tmpl
     fi
   done < $__sempl_template
+  [ $__sempl_fail_missing -eq 1 ] && set -o nounset && set -e
   eval "echo \"$(cat ${__tmp_tmpl} \
                    | sed 's/\"/\"\\\"/g' \
                    | sed 's/</\\</g' \
@@ -81,6 +84,7 @@ _convert_template() {
   else
     _error "Could not convert template ${__sempl_template}"
   fi
+  set +e
   return $__rc
 }
 
@@ -110,6 +114,7 @@ _main() {
       -k)        shift; __sempl_password_file=${1};;
       -v)        __sempl_verbose=1;;
       -o)        __sempl_stdout=1;;
+      -f)        __sempl_fail_missing=1;;
       -h|--help) _usage; exit;;
       --version) _version; exit;;
       --update)  _update; exit;;
