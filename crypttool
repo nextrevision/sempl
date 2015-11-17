@@ -13,6 +13,7 @@ _usage() {
   echo "usage: $0 [args] command varsfile"
   echo
   echo "commands:"
+  echo "  cat             cat the decrypted contents of the varsfile"
   echo "  edit            edit the varsfile (opens with ${EDITOR})"
   echo "  decrypt         decrypt the varsfile"
   echo "  encrypt         encrypt the varsfile"
@@ -70,6 +71,12 @@ _edit() {
   fi
 }
 
+_cat() {
+  _decrypt
+  cat $__crypttool_decrypted_file
+  rm $__crypttool_decrypted_file
+}
+
 _main() {
   [ -z "$1" ] && { _usage; exit 1; }
 
@@ -95,6 +102,7 @@ _main() {
   [ -r "${__crypttool_varsfile}" ] || _error "cannot read varsfile ${__crypttool_varsfile}"
 
   case "${__crypttool_command}" in
+    cat)      _cat;;
     edit)     _edit;;
     decrypt)  _decrypt
               mv ${__crypttool_decrypted_file} ${__crypttool_varsfile//.enc/}
