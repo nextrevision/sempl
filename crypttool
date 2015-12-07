@@ -14,6 +14,7 @@ _usage() {
   echo
   echo "commands:"
   echo "  cat             cat the decrypted contents of the varsfile"
+  echo "  create          create a new encrypted vars file"
   echo "  edit            edit the varsfile (opens with ${EDITOR})"
   echo "  decrypt         decrypt the varsfile"
   echo "  encrypt         encrypt the varsfile"
@@ -68,6 +69,7 @@ _edit() {
   if [[ $REPLY == 'y' ]]; then
     _encrypt $__crypttool_decrypted_file
     mv $__crypttool_encrypted_file $__crypttool_varsfile
+    [ -f ${__crypttool_decrypted_file} ] && rm ${__crypttool_decrypted_file}
   fi
 }
 
@@ -75,6 +77,18 @@ _cat() {
   _decrypt
   cat $__crypttool_decrypted_file
   rm $__crypttool_decrypted_file
+}
+
+_create() {
+  local varsfile=${1:-$__crypttool_varsfile}
+  __crypttool_decrypted_file=$(mktemp -t crypttool.XXXXXX)
+  $EDITOR ${__crypttool_decrypted_file}
+  read -p "Commit and encrypt the changes (y/n)? "
+  if [[ $REPLY == 'y' ]]; then
+    _encrypt $__crypttool_decrypted_file
+    mv $__crypttool_encrypted_file ${__crypttool_varsfile//.enc/}.enc
+    [ -f ${__crypttool_decrypted_file} ] && rm ${__crypttool_decrypted_file}
+  fi
 }
 
 _main() {
@@ -99,10 +113,13 @@ _main() {
 
   [ -z "${__crypttool_password}" ] && _error "must specify a password"
   [ -z "${__crypttool_varsfile}" ] && _error "must specify a varsfile"
-  [ -r "${__crypttool_varsfile}" ] || _error "cannot read varsfile ${__crypttool_varsfile}"
+  if [[ ${__crypttool_command} != "create" ]]; then
+    [ -r "${__crypttool_varsfile}" ] || _error "cannot read varsfile ${__crypttool_varsfile}"
+  fi
 
   case "${__crypttool_command}" in
     cat)      _cat;;
+    create)   _create;;
     edit)     _edit;;
     decrypt)  _decrypt
               mv ${__crypttool_decrypted_file} ${__crypttool_varsfile//.enc/}
