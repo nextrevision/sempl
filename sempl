@@ -156,8 +156,9 @@ _main() {
 
   # do work
   _convert_template
+  local __rc=$?
   _clean
-  return 0
+  return $__rc
 }
 
 # test if script is being called or sourced
