@@ -6,6 +6,7 @@ __sempl_version=0.2.4
 __sempl_verbose=0
 __sempl_stdout=0
 __sempl_fail_missing=0
+__sempl_check=0
 __sempl_template=''
 __sempl_outfile=''
 __sempl_varsfile=''
@@ -22,6 +23,7 @@ _usage() {
   echo "-v              verbose"
   echo "-o              print template to stdout"
   echo "-f              fail if a variable is unset with no default"
+  echo "-c              check that the template will render, but do not write the file"
   echo "-h              help"
   echo "--version       print version and exit"
   echo "--update        update script to latest version"
@@ -69,7 +71,10 @@ _convert_template() {
       echo "${__line}" >> $__tmp_tmpl
     fi
   done < $__sempl_template
-  [ $__sempl_fail_missing -eq 1 ] && set -o nounset && set -e
+  if [ $__sempl_fail_missing -eq 1 ]; then
+    set -o nounset
+    set -o pipefail
+  fi
   eval "echo \"$(cat ${__tmp_tmpl} \
                    | sed 's/\"/\"\\\"/g' \
                    | sed 's/</\\</g' \
@@ -78,13 +83,18 @@ _convert_template() {
     | sed 's/\\</</g' \
     > $__sempl_outfile
   local __rc=$?
+  set +o nounset
+  set +o pipefail
   rm $__tmp_tmpl
-  if [ $__rc -eq 0 ]; then
-    _verbose "Template written to ${__sempl_outfile}"
+  if [ $__sempl_check -eq 1 ]; then
+    rm $__sempl_outfile
   else
-    _error "Could not convert template ${__sempl_template}"
+    if [ $__rc -eq 0 ]; then
+      _verbose "Template written to ${__sempl_outfile}"
+    else
+      _error "Could not convert template ${__sempl_template}"
+    fi
   fi
-  set +e
   return $__rc
 }
 
@@ -115,6 +125,7 @@ _main() {
       -v)        __sempl_verbose=1;;
       -o)        __sempl_stdout=1;;
       -f)        __sempl_fail_missing=1;;
+      -c)        __sempl_check=1;;
       -h|--help) _usage; exit;;
       --version) _version; exit;;
       --update)  _update; exit;;
@@ -152,6 +163,9 @@ _main() {
   fi
   if [ $__sempl_stdout -eq 1 ]; then
     __sempl_outfile=/dev/stdout
+  fi
+  if [ $__sempl_check -eq 1 ]; then
+    __sempl_outfile=$(mktemp -t sempl.XXXXXX)
   fi
 
   # do work
