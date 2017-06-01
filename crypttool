@@ -64,7 +64,7 @@ _encrypt() {
 
 _edit() {
   _decrypt
-  $EDITOR $__crypttool_decrypted_file
+  $__crypttool_editor $__crypttool_decrypted_file
   read -p "Commit and encrypt the changes (y/n)? "
   if [[ $REPLY == 'y' ]]; then
     _encrypt $__crypttool_decrypted_file
@@ -82,7 +82,7 @@ _cat() {
 _create() {
   local varsfile=${1:-$__crypttool_varsfile}
   __crypttool_decrypted_file=$(mktemp -t crypttool.XXXXXX)
-  $EDITOR ${__crypttool_decrypted_file}
+  $__crypttool_editor ${__crypttool_decrypted_file}
   read -p "Commit and encrypt the changes (y/n)? "
   if [[ $REPLY == 'y' ]]; then
     _encrypt $__crypttool_decrypted_file
