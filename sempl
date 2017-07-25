@@ -1,7 +1,7 @@
 #!/bin/bash
 
 __sempl_path=$0
-__sempl_version=0.2.4
+__sempl_version=0.3.0
 
 __sempl_verbose=0
 __sempl_stdout=0
@@ -9,7 +9,8 @@ __sempl_fail_missing=0
 __sempl_check=0
 __sempl_template=''
 __sempl_outfile=''
-__sempl_varsfile=''
+__sempl_varsfiles=( )
+__sempl_enc_varsfiles=( )
 __sempl_password=''
 __sempl_password_file=''
 
@@ -17,7 +18,7 @@ _usage() {
   echo "usage: $0 [args] template [outfile]"
   echo
   echo "args:"
-  echo "-s [varsfile]   vars file"
+  echo "-s [varsfile]   vars file (can be repeated)"
   echo "-p [password]   decryption password"
   echo "-k [passfile]   decryption password file"
   echo "-v              verbose"
@@ -86,9 +87,7 @@ _convert_template() {
   set +o nounset
   set +o pipefail
   rm $__tmp_tmpl
-  if [ $__sempl_check -eq 1 ]; then
-    rm $__sempl_outfile
-  else
+  if [ $__sempl_check -ne 1 ]; then
     if [ $__rc -eq 0 ]; then
       _verbose "Template written to ${__sempl_outfile}"
     else
@@ -96,12 +95,6 @@ _convert_template() {
     fi
   fi
   return $__rc
-}
-
-_clean() {
-  if [[ ${__sempl_varsfile: -6} == ".unenc" ]]; then
-    rm -f ${__sempl_varsfile}
-  fi
 }
 
 _update() {
@@ -119,7 +112,7 @@ _main() {
 
   while [ ! -z "$1" ]; do
     case "$1" in
-      -s)        shift; __sempl_varsfile=${1};;
+      -s)        shift; __sempl_varsfiles[${#__sempl_varsfiles[@]}]=${1};;
       -p)        shift; __sempl_password=${1};;
       -k)        shift; __sempl_password_file=${1};;
       -v)        __sempl_verbose=1;;
@@ -143,19 +136,28 @@ _main() {
   # ensure read permissions to template file
   [ -r ${__sempl_template} ] || _error "No such template '${__sempl_template}'"
 
-  # if a vars file was specified ensure read permissions and load
-  if [ ! -z "${__sempl_varsfile}" ]; then
-    if [ ! -z "${__sempl_password_file}" ]; then
-      [ -r ${__sempl_password_file} ] || _error "Cannot read password file '${__sempl_password_file}'"
-      __sempl_password=$(head -n1 ${__sempl_password_file})
-    fi
-    if [ ! -z "${__sempl_password}" ]; then
-      openssl aes-256-cbc -d -salt -in ${__sempl_varsfile} -out ${__sempl_varsfile}.unenc -k ${__sempl_password}
-      [ $? -eq 0 ] || _error "Unable to decrypt password vars file ${__sempl_varsfile}"
-      __sempl_varsfile=${__sempl_varsfile}.unenc
-    fi
-    source $__sempl_varsfile || _error "Cannot source vars file '${__sempl_varsfile}'"
+  if [ ! -z "${__sempl_password_file}" ]; then
+    [ -r ${__sempl_password_file} ] || _error "Cannot read password file '${__sempl_password_file}'"
+    __sempl_password=$(head -n1 ${__sempl_password_file})
   fi
+
+  # if a vars file was specified ensure read permissions and load
+  for varsfile in "${__sempl_varsfiles[@]}"; do
+    if [[ " data" == $(file ${varsfile} | cut -d':' -f2) ]]; then
+      __sempl_enc_varsfiles[${#__sempl_enc_varsfiles[@]}]=${varsfile}
+      if [ ! -z "${__sempl_password}" ]; then
+        openssl aes-256-cbc -d -salt -in ${varsfile} -out ${varsfile}.unenc -k ${__sempl_password} \
+          || { rm -f ${varsfile}.unenc; _error "Unable to decrypt password vars file ${varsfile}"; }
+        source ${varsfile}.unenc \
+          && rm -f ${varsfile}.unenc \
+          || { rm -f ${varsfile}.unenc; _error "Cannot source vars file '${varsfile}'"; }
+      else
+        _error 'No decryption password specified'
+      fi
+    else
+      source ${varsfile} || _error "Cannot source vars file '${varsfile}'"
+    fi
+  done
 
   # default outfile to template file without .tpml extension
   if [ -z "${__sempl_outfile}" ]; then
@@ -165,14 +167,12 @@ _main() {
     __sempl_outfile=/dev/stdout
   fi
   if [ $__sempl_check -eq 1 ]; then
-    __sempl_outfile=$(mktemp -t sempl.XXXXXX)
+    __sempl_outfile=/dev/null
   fi
 
   # do work
   _convert_template
-  local __rc=$?
-  _clean
-  return $__rc
+  return $?
 }
 
 # test if script is being called or sourced

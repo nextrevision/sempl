@@ -25,12 +25,6 @@ it_displays_error() {
   assert_rc 1
   assert_content "ERROR: test error"
 }
-it_cleans_unencrypted_files() {
-  touch test.unenc
-  cmd "__sempl_varsfile=test.unenc _clean"
-  assert_rc 0
-  ! test -f test.unenc
-}
 
 describe "test cli flags"
 it_errors_without_args() {

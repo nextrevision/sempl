@@ -43,17 +43,23 @@ We could expect the following output when running `sempl`:
 
 ## Usage
 
-    usage: ./sempl [args] template [outfile]
+```
+usage: ./sempl [args] template [outfile]
 
-    args:
-    -s [varsfile]   vars file
-    -p [password]   decryption password
-    -k [passfile]   decryption password file
-    -v              verbose
-    -o              prints template to stdout
-    -h              help
-    --version       print version and exit
-    --update        update script to latest version
+usage: ./sempl [args] template [outfile]
+
+args:
+-s [varsfile]   vars file (can be repeated)
+-p [password]   decryption password
+-k [passfile]   decryption password file
+-v              verbose
+-o              print template to stdout
+-f              fail if a variable is unset with no default
+-c              check that the template will render, but do not write the file
+-h              help
+--version       print version and exit
+--update        update script to latest version
+```
 
 ## Loops
 
@@ -88,13 +94,22 @@ without a preceding `#` will be rendered as output by the template.
 
 ### Template Expansion w/ Decryption Key
 
-    ./sempl -v -p mypassword -s examples/vars.sh \
+    ./sempl -v -p mypassword -s examples/vars.sh.enc \
       examples/config.json.tmpl examples/outfile.json
 
 ### Template Expansion w/ Decryption File
 
-    ./sempl -v -k examples/passfile.txt -s examples/vars.sh \
+    ./sempl -v -k examples/passfile.txt -s examples/vars.sh.enc \
       examples/outfile.json examples/config.json.tmpl
+
+### Template Expansion w/ Multiple Varsfiles
+
+Multiple vars files can be specified by repeating the `-s` flag. Vars files can
+either be passed either encrypted or decrypted.
+
+    ./sempl -v -p mypassword -s examples/vars.sh.enc \
+      -s examples/vars.sh -s examples/vars.sh \
+      examples/config.json.tmpl examples/outfile.json
 
 ### Looping over a list of files
 
