@@ -46,8 +46,6 @@ We could expect the following output when running `sempl`:
 ```
 usage: ./sempl [args] template [outfile]
 
-usage: ./sempl [args] template [outfile]
-
 args:
 -s [varsfile]   vars file (can be repeated)
 -p [password]   decryption password

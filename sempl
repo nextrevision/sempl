@@ -10,7 +10,6 @@ __sempl_check=0
 __sempl_template=''
 __sempl_outfile=''
 __sempl_varsfiles=( )
-__sempl_enc_varsfiles=( )
 __sempl_password=''
 __sempl_password_file=''
 
@@ -144,7 +143,6 @@ _main() {
   # if a vars file was specified ensure read permissions and load
   for varsfile in "${__sempl_varsfiles[@]}"; do
     if [[ " data" == $(file ${varsfile} | cut -d':' -f2) ]]; then
-      __sempl_enc_varsfiles[${#__sempl_enc_varsfiles[@]}]=${varsfile}
       if [ ! -z "${__sempl_password}" ]; then
         openssl aes-256-cbc -d -salt -in ${varsfile} -out ${varsfile}.unenc -k ${__sempl_password} \
           || { rm -f ${varsfile}.unenc; _error "Unable to decrypt password vars file ${varsfile}"; }
