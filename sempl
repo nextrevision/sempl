@@ -88,7 +88,7 @@ _convert_template() {
   rm $__tmp_tmpl
   if [ $__sempl_check -ne 1 ]; then
     if [ $__rc -eq 0 ]; then
-      _verbose "Template written to ${__sempl_outfile}"
+      [[ $__sempl_outfile == '/dev/stdout' ]] || _verbose "Template written to ${__sempl_outfile}"
     else
       _error "Could not convert template ${__sempl_template}"
     fi
